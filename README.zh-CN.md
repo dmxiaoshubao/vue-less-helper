@@ -2,6 +2,8 @@
 
 一个用于增强 Vue 与 `.less` 文件中 Less 符号体验的 VS Code 插件。
 
+[English](README.md)
+
 ## 当前功能（v0.1.1）
 
 - 在以下语境提供变量/混入补全：
@@ -108,6 +110,12 @@ npm run test:host:demos
 
 - 当前解析实现基于正则，覆盖常见 Less 变量/混入写法。
 - 为确保结果稳定，建议明确配置 `vueLessHelper.lessFiles`。
+
+## 支持一下
+
+如果这个项目对你有帮助，欢迎点个 Star 支持：
+
+[⭐ Star vue-less-helper](https://github.com/dmxiaoshubao/vue-less-helper)
 
 ## 开源协议
 

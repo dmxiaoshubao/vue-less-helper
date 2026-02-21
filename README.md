@@ -2,6 +2,8 @@
 
 VS Code extension for Less symbol enhancement in Vue and `.less` files.
 
+[简体中文](README.zh-CN.md)
+
 ## Current Capabilities (v0.1.1)
 
 - Completion for Less variables and mixins in:
@@ -108,6 +110,12 @@ Demo workspaces used by host matrix tests:
 
 - Parsing is regex-based and focused on common Less variable/mixin patterns.
 - If you need exact behavior in your project, configure `vueLessHelper.lessFiles` explicitly.
+
+## Support
+
+If this project helps you, please give it a Star:
+
+[⭐ Star vue-less-helper](https://github.com/dmxiaoshubao/vue-less-helper)
 
 ## License
 
