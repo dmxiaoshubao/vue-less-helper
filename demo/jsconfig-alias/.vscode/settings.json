@@ -1,0 +1,11 @@
+{
+  "vueLessHelper.suppressNotice": false,
+  "less.suppressNotice": false,
+  "vueLessHelper.lessFiles": [
+    "~/styles/variables.less",
+    "~/styles/mixins.less"
+  ],
+  "vueLessHelper.notice": true,
+  "less.files": [],
+  "less.notice": true
+}

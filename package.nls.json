@@ -1,0 +1,6 @@
+{
+  "extension.description": "A VSCode extension for Vue Less features like completion, hover, and definition jumping.",
+  "configuration.title": "Vue Less Helper",
+  "configuration.lessFiles.description": "Path to Less files for global variables/mixins. Supports aliases (e.g. '@/styles/variables.less').",
+  "configuration.notice.description": "Whether to show onboarding notice when lessFiles is not configured."
+}

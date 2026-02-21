@@ -1,0 +1,44 @@
+.flex-center() {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// 带有多个参数并且含有默认值的 Mixin
+.box-shadow(@x: 0, @y: 4px, @blur: 14px, @color: rgba(0,0,0,0.1)) {
+  -webkit-box-shadow: @arguments;
+  -moz-box-shadow: @arguments;
+  box-shadow: @arguments;
+  box-shadow: @arguments;
+  box-shadow: @arguments;
+  box-shadow: @arguments;
+  box-shadow: @arguments;
+  box-shadow: @arguments;
+}
+
+// 带有可变参数 (rest arguments) 的 Mixin
+.transition() {
+  -webkit-transition: @arguments;
+  -moz-transition: @arguments;
+  -o-transition: @arguments;
+  transition: @arguments;
+}
+
+// 没有参数但也不带括号的普通 Class 形式 (在 Less 中也可作为混入)
+.clearfix {
+  display: block;
+  zoom: 1;
+
+  &:after {
+    content: " ";
+    display: block;
+    font-size: 0;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+  }
+}
+
+.basic-box-shadow() {
+  box-shadow: 0 0 0 #a00;
+}

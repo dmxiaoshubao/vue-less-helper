@@ -1,0 +1,12 @@
+{
+  "name": "vue-less-helper-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Demo project for testing vue-less-helper extension",
+  "dependencies": {
+    "vue": "^3.2.0"
+  },
+  "devDependencies": {
+    "less": "^4.1.3"
+  }
+}

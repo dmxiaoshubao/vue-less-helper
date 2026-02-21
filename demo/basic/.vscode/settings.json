@@ -1,0 +1,8 @@
+{
+  "vueLessHelper.suppressNotice": false,
+  "vueLessHelper.lessFiles": [
+    "src/styles/variables.less",
+    "src/styles/mixins.less"
+  ],
+  "vueLessHelper.notice": true
+}
