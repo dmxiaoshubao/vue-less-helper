@@ -4,7 +4,7 @@ VS Code extension for Less symbol enhancement in Vue and `.less` files.
 
 [简体中文](README.zh-CN.md)
 
-## Current Capabilities (v0.1.1)
+## Current Capabilities (v0.1.2)
 
 - Completion for Less variables and mixins in:
   - `.less` files
@@ -17,6 +17,11 @@ VS Code extension for Less symbol enhancement in Vue and `.less` files.
 - Recursive index from configured entry Less files and their imports.
 - Consistent preview between completion and hover.
 - Mixin preview body is truncated to at most 5 lines, then `...`.
+- Mixin preview indentation is normalized by minimum common indent, then offset by 2 spaces.
+- Color annotation (swatch row under code block) for mixins is computed from top-level declarations only:
+  - duplicate keys use the last value
+  - nested block declarations are ignored
+  - if no top-level color declaration exists, no color annotation row is rendered
 - Multi-root workspace support:
   - each workspace folder indexes independently
   - completion/hover/definition/auto-import resolve by current file's workspace root
@@ -49,6 +54,10 @@ Completion suggestions:
 | Auto import circular dependency guard (default) | Yes | Unsafe circular imports are blocked by default. |
 | Prefer symbol source file over entry file | Yes | Uses symbol definition source when available. |
 | Mixin preview body max 5 lines | Yes | Over-limit lines become `...`. |
+| Mixin preview indentation normalization | Yes | Minimum common indent is normalized, then +2 spaces. |
+| Mixin color annotation from top-level declarations only | Yes | Nested declarations are ignored. |
+| Duplicate top-level declaration key handling | Yes | Uses the last declaration value. |
+| Render color annotation when top-level color does not exist | No | No fallback to nested declaration colors. |
 | Multi-root workspace isolation | Yes | Uses current file workspace root for symbol lookup and import resolution. |
 | Relative path resolution | Yes | Supported for config/import resolution. |
 | Absolute path resolution | Yes | Supported for config/import resolution. |

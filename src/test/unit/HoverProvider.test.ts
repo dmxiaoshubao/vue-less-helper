@@ -31,6 +31,29 @@ describe('HoverProvider', () => {
     assert.strictEqual(((result.contents[0] as vscode.MarkdownString).value).indexOf('@my-var: 10px;') !== -1, true);
   });
 
+  it('should render color palette for color variable hover', async () => {
+    CacheManager.getInstance().setCache(
+      'color.less',
+      [{ name: '@brand-green', value: '#18c721', position: { line: 0, character: 0 } }],
+      [],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      getWordRangeAtPosition: () => new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 12)),
+      getText: () => '@brand-green'
+    } as any;
+
+    const result = await provider.provideHover(doc, new vscode.Position(0, 3), null as any) as vscode.Hover;
+    const preview = (result.contents[0] as vscode.MarkdownString).value;
+    assert.ok(!preview.includes('Colors:'));
+    assert.ok(preview.includes('```less'));
+    assert.ok(preview.includes('■'));
+    assert.ok(preview.includes('style="color:#18c721;"'));
+    assert.ok(preview.includes('color:'));
+  });
+
   it('should return hover info for mixins', async () => {
     const doc = {
       languageId: 'less',
@@ -160,6 +183,148 @@ describe('HoverProvider', () => {
     assert.ok(preview.includes('.clearfix {'));
     assert.ok(preview.includes('...'));
     assert.ok(!preview.includes('visibility: hidden;'));
+  });
+
+  it('should keep 5-line preview and only show last top-level color for duplicated keys', async () => {
+    CacheManager.getInstance().setCache(
+      'dedupe.less',
+      [],
+      [{
+        name: '.border-radius',
+        params: '@r',
+        body: `.border-radius(@r) {
+  border-radius: @r;
+  background-color: #00ff00;
+  .a {
+    background-color: #ff0;
+    .b {
+      background-color: #f0f;
+    }
+  }
+  background-color: #f00;
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      getWordRangeAtPosition: () => new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 13)),
+      getText: () => '.border-radius'
+    } as any;
+
+    const result = await provider.provideHover(doc, new vscode.Position(0, 4), null as any) as vscode.Hover;
+    const preview = (result.contents[0] as vscode.MarkdownString).value;
+    assert.ok(preview.includes('```less'));
+    assert.ok(preview.includes('...'));
+    assert.ok(preview.includes('\n  border-radius: @r;'));
+    assert.ok(preview.includes('\n  background-color: #00ff00;'));
+    assert.ok(preview.includes('style="color:#ff0000;"'));
+    assert.ok(!preview.includes('style="color:#00ff00;"'));
+    assert.ok(!preview.includes('style="color:#ffff00;"'));
+    assert.ok(!preview.includes('style="color:#ff00ff;"'));
+  });
+
+  it('should preserve nested block indentation in mixin preview', async () => {
+    CacheManager.getInstance().setCache(
+      'indent.less',
+      [],
+      [{
+        name: '.indent-demo',
+        params: '',
+        body: `.indent-demo {
+  width: 10px;
+  .a {
+    color: #000;
+  }
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      getWordRangeAtPosition: () => new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 12)),
+      getText: () => '.indent-demo'
+    } as any;
+
+    const result = await provider.provideHover(doc, new vscode.Position(0, 4), null as any) as vscode.Hover;
+    const preview = (result.contents[0] as vscode.MarkdownString).value;
+    assert.ok(preview.includes('  .a {'));
+    assert.ok(preview.includes('    color: #000;'));
+    assert.ok(preview.includes('  }'));
+  });
+
+  it('should use top-level color when nested blocks have colors but key is not overridden later', async () => {
+    CacheManager.getInstance().setCache(
+      'dedupe-keep.less',
+      [],
+      [{
+        name: '.border-radius',
+        params: '@r',
+        body: `.border-radius(@r) {
+  border-radius: @r;
+  background-color: #00ff00;
+  .a {
+    background-color: #ff0;
+    .b {
+      background-color: #f0f;
+    }
+  }
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      getWordRangeAtPosition: () => new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 13)),
+      getText: () => '.border-radius'
+    } as any;
+
+    const result = await provider.provideHover(doc, new vscode.Position(0, 4), null as any) as vscode.Hover;
+    const preview = (result.contents[0] as vscode.MarkdownString).value;
+    assert.ok(preview.includes('style="color:#00ff00;"'));
+    assert.ok(!preview.includes('style="color:#ffff00;"'));
+    assert.ok(!preview.includes('style="color:#ff00ff;"'));
+  });
+
+  it('should not render any color annotation when mixin has only nested colors', async () => {
+    CacheManager.getInstance().setCache(
+      'nested-only-color.less',
+      [],
+      [{
+        name: '.border-radius',
+        params: '@r',
+        body: `.border-radius(@r) {
+  border-radius: @r;
+  .a {
+    color: #000;
+    .b {
+      background-color: #f0f;
+    }
+  }
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      getWordRangeAtPosition: () => new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 13)),
+      getText: () => '.border-radius'
+    } as any;
+
+    const result = await provider.provideHover(doc, new vscode.Position(0, 4), null as any) as vscode.Hover;
+    const preview = (result.contents[0] as vscode.MarkdownString).value;
+    assert.ok(preview.includes('color: #000;'));
+    assert.ok(preview.includes('background-color: #f0f;'));
+    assert.ok(!preview.includes('style="color:#000000;"'));
+    assert.ok(!preview.includes('style="color:#ff00ff;"'));
   });
 
   it('should return undefined in vue file when position is outside less style context', async () => {

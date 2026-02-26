@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import { CacheManager } from '../services/CacheManager';
-import { formatMixinPreview, formatVariablePreview } from '../utils/LessSymbolPreview';
+import {
+  formatPreviewWithInlineColorSwatches,
+  formatMixinPreview,
+  formatVariablePreview
+} from '../utils/LessSymbolPreview';
 import { isInLessCommentAtPosition, isLessContextAtPosition } from '../utils/LessDocumentContext';
 
 export class LessHoverProvider implements vscode.HoverProvider {
@@ -31,19 +35,32 @@ export class LessHoverProvider implements vscode.HoverProvider {
     if (word.startsWith('@')) {
       const matchedVar = cacheManager.findVariableByWorkspace(word, workspaceRoot);
       if (matchedVar) {
-        const md = new vscode.MarkdownString();
-        md.appendCodeblock(formatVariablePreview(matchedVar.name, matchedVar.value), 'less');
+        const md = this.createPreviewMarkdown(
+          formatVariablePreview(matchedVar.name, matchedVar.value),
+          matchedVar.value
+        );
         return new vscode.Hover(md, range);
       }
     } else if (word.startsWith('.')) {
       const matchedMixin = cacheManager.findMixinByWorkspace(word, workspaceRoot);
       if (matchedMixin) {
-        const md = new vscode.MarkdownString();
-        md.appendCodeblock(formatMixinPreview(matchedMixin.body), 'less');
+        const md = this.createPreviewMarkdown(
+          formatMixinPreview(matchedMixin.body),
+          matchedMixin.body
+        );
         return new vscode.Hover(md, range);
       }
     }
 
     return undefined;
+  }
+
+  private createPreviewMarkdown(previewCode: string, colorSource: string = previewCode): vscode.MarkdownString {
+    const rendered = formatPreviewWithInlineColorSwatches(previewCode, colorSource);
+    const md = new vscode.MarkdownString(rendered.markdown);
+    if (rendered.supportHtml) {
+      md.supportHtml = true;
+    }
+    return md;
   }
 }

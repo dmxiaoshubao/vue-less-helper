@@ -137,26 +137,157 @@ export class LessParser {
   public static extractMixins(content: string): LessMixin[] {
     const mixins: LessMixin[] = [];
     const cleanContent = this.removeComments(content);
-    const lines = cleanContent.split('\n');
+    let i = 0;
+    while (i < cleanContent.length) {
+      const ch = cleanContent[i];
+      if (ch !== '.' || !this.isMixinStartBoundary(cleanContent, i - 1)) {
+        i++;
+        continue;
+      }
 
-    // 修改正则：使其括号以及参数匹配可选，同时适配 `.box` 或 `.box( ... )`
-    const mixinRegex = /(\.[a-zA-Z0-9_-]+)(?:\s*\((.*?)\))?\s*\{([^]*?)\}/g;
+      let cursor = i + 1;
+      while (cursor < cleanContent.length && /[a-zA-Z0-9_-]/.test(cleanContent[cursor])) {
+        cursor++;
+      }
+      if (cursor === i + 1) {
+        i++;
+        continue;
+      }
 
-    const contentStr = lines.join('\n');
-    let match;
-    while ((match = mixinRegex.exec(contentStr)) !== null) {
-      // 计算行号大概位置
-      const preMatch = contentStr.substring(0, match.index);
+      const mixinName = cleanContent.slice(i, cursor);
+      cursor = this.skipSpaces(cleanContent, cursor);
+
+      let params = '';
+      if (cleanContent[cursor] === '(') {
+        const paramEnd = this.findMatchingCloseParenIndex(cleanContent, cursor);
+        if (paramEnd < 0) {
+          i++;
+          continue;
+        }
+        params = cleanContent.slice(cursor + 1, paramEnd).trim();
+        cursor = this.skipSpaces(cleanContent, paramEnd + 1);
+      }
+
+      if (cleanContent[cursor] !== '{') {
+        i++;
+        continue;
+      }
+
+      const closeBraceIndex = this.findMatchingCloseBraceIndex(cleanContent, cursor);
+      const bodyEnd = closeBraceIndex >= 0 ? closeBraceIndex + 1 : cleanContent.length;
+      const preMatch = cleanContent.substring(0, i);
       const line = preMatch.split('\n').length - 1;
-      
       mixins.push({
-        name: match[1],
-        params: match[2] ? match[2].trim() : '',
-        body: match[0], // 获取完整的 .box(...) { ... } 用作提示呈现
+        name: mixinName,
+        params,
+        body: cleanContent.slice(i, bodyEnd),
         position: { line, character: 0 }
       });
+
+      i = bodyEnd;
     }
 
     return mixins;
+  }
+
+  private static isMixinStartBoundary(content: string, index: number): boolean {
+    if (index < 0) {
+      return true;
+    }
+    return /[\s;{}(),>+~]/.test(content[index]);
+  }
+
+  private static skipSpaces(content: string, from: number): number {
+    let i = from;
+    while (i < content.length && /\s/.test(content[i])) {
+      i++;
+    }
+    return i;
+  }
+
+  private static findMatchingCloseParenIndex(content: string, openParenIndex: number): number {
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let escaped = false;
+
+    for (let i = openParenIndex; i < content.length; i++) {
+      const ch = content[i];
+      if (inSingleQuote) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '\'') inSingleQuote = false;
+        continue;
+      }
+      if (inDoubleQuote) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') inDoubleQuote = false;
+        continue;
+      }
+      if (ch === '\'') {
+        inSingleQuote = true;
+        continue;
+      }
+      if (ch === '"') {
+        inDoubleQuote = true;
+        continue;
+      }
+      if (ch === '(') {
+        depth++;
+        continue;
+      }
+      if (ch === ')') {
+        depth--;
+        if (depth === 0) {
+          return i;
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  private static findMatchingCloseBraceIndex(content: string, openBraceIndex: number): number {
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let escaped = false;
+
+    for (let i = openBraceIndex; i < content.length; i++) {
+      const ch = content[i];
+      if (inSingleQuote) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '\'') inSingleQuote = false;
+        continue;
+      }
+      if (inDoubleQuote) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') inDoubleQuote = false;
+        continue;
+      }
+      if (ch === '\'') {
+        inSingleQuote = true;
+        continue;
+      }
+      if (ch === '"') {
+        inDoubleQuote = true;
+        continue;
+      }
+      if (ch === '{') {
+        depth++;
+        continue;
+      }
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          return i;
+        }
+      }
+    }
+
+    return -1;
   }
 }

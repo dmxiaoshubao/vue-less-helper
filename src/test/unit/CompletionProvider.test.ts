@@ -32,6 +32,31 @@ describe('CompletionProvider', () => {
     assert.strictEqual(result.length, 1);
     assert.strictEqual(result[0].label, '@primary-color');
     assert.strictEqual(result[0].kind, vscode.CompletionItemKind.Color);
+    const preview = ((result[0].documentation as vscode.MarkdownString).value);
+    assert.ok(!preview.includes('Colors:'));
+    assert.ok(preview.includes('```less'));
+    assert.ok(preview.includes('■'));
+    assert.ok(preview.includes('style="color:#1890ff;"'));
+  });
+
+  it('should not set completion detail to avoid duplicated top line in docs widget', async () => {
+    const varDoc = {
+      languageId: 'less',
+      lineAt: () => ({ text: 'color: @' }),
+      getText: () => ''
+    } as any;
+    const varResult = await provider.provideCompletionItems(varDoc, new vscode.Position(0, 8), null as any, null as any) as vscode.CompletionItem[];
+    assert.strictEqual(varResult[0].detail, undefined);
+
+    const mixinDoc = {
+      languageId: 'less',
+      lineAt: () => ({ text: '  .' }),
+      getText: () => ''
+    } as any;
+    const mixinResult = await provider.provideCompletionItems(mixinDoc, new vscode.Position(0, 3), null as any, null as any) as vscode.CompletionItem[];
+    const borderRadius = mixinResult.find(item => item.label === '.border-radius');
+    assert.ok(borderRadius);
+    assert.strictEqual(borderRadius!.detail, undefined);
   });
 
   it('should return mixin completion on . trigger', async () => {
@@ -259,6 +284,117 @@ describe('CompletionProvider', () => {
     assert.ok(preview.includes('.clearfix {'));
     assert.ok(preview.includes('...'));
     assert.ok(!preview.includes('visibility: hidden;'));
+  });
+
+  it('should keep completion body preview at 5 lines and render only last top-level color annotation', async () => {
+    CacheManager.getInstance().setCache(
+      'dedupe.less',
+      [],
+      [{
+        name: '.dedupe-radius',
+        params: '@r',
+        body: `.dedupe-radius(@r) {
+  border-radius: @r;
+  background-color: #00ff00;
+  .a {
+    background-color: #ff0;
+    .b {
+      background-color: #f0f;
+    }
+  }
+  background-color: #f00;
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      lineAt: () => ({ text: '.dedupe' }),
+      getText: () => ''
+    } as any;
+
+    const result = await provider.provideCompletionItems(doc, new vscode.Position(0, 7), null as any, null as any) as vscode.CompletionItem[];
+    const item = result.find(i => i.label === '.dedupe-radius');
+    assert.ok(item);
+    const preview = (item!.documentation as vscode.MarkdownString).value;
+    assert.ok(preview.includes('```less'));
+    assert.ok(preview.includes('...'));
+    assert.ok(preview.includes('style="color:#ff0000;"'));
+    assert.ok(!preview.includes('style="color:#00ff00;"'));
+    assert.ok(!preview.includes('style="color:#ffff00;"'));
+    assert.ok(!preview.includes('style="color:#ff00ff;"'));
+  });
+
+  it('should preserve nested block indentation in completion preview', async () => {
+    CacheManager.getInstance().setCache(
+      'indent.less',
+      [],
+      [{
+        name: '.indent-demo',
+        params: '',
+        body: `.indent-demo {
+  width: 10px;
+  .a {
+    color: #000;
+  }
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      lineAt: () => ({ text: '.indent' }),
+      getText: () => ''
+    } as any;
+
+    const result = await provider.provideCompletionItems(doc, new vscode.Position(0, 7), null as any, null as any) as vscode.CompletionItem[];
+    const item = result.find(i => i.label === '.indent-demo');
+    assert.ok(item);
+    const preview = (item!.documentation as vscode.MarkdownString).value;
+    assert.ok(preview.includes('  .a {'));
+    assert.ok(preview.includes('    color: #000;'));
+    assert.ok(preview.includes('  }'));
+  });
+
+  it('should not render any color annotation in completion preview when mixin has only nested colors', async () => {
+    CacheManager.getInstance().setCache(
+      'nested-only-color.less',
+      [],
+      [{
+        name: '.nested-only-color',
+        params: '',
+        body: `.nested-only-color {
+  border-radius: 4px;
+  .a {
+    color: #000;
+    .b {
+      background-color: #f0f;
+    }
+  }
+}`,
+        position: { line: 0, character: 0 }
+      }],
+      1
+    );
+
+    const doc = {
+      languageId: 'less',
+      lineAt: () => ({ text: '.nested-only' }),
+      getText: () => ''
+    } as any;
+
+    const result = await provider.provideCompletionItems(doc, new vscode.Position(0, 12), null as any, null as any) as vscode.CompletionItem[];
+    const item = result.find(i => i.label === '.nested-only-color');
+    assert.ok(item);
+    const preview = (item!.documentation as vscode.MarkdownString).value;
+    assert.ok(preview.includes('color: #000;'));
+    assert.ok(preview.includes('background-color: #f0f;'));
+    assert.ok(!preview.includes('style="color:#000000;"'));
+    assert.ok(!preview.includes('style="color:#ff00ff;"'));
   });
 
   describe('User specified edge cases for mixins triggers', () => {

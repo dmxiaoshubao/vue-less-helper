@@ -3,7 +3,7 @@
   "publisher": "dmxiaoshubao",
   "displayName": "Vue Less Helper",
   "description": "%extension.description%",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "icon": "docs/images/icon.png",
   "license": "MIT",
   "repository": {

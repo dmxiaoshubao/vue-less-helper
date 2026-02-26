@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 > Historical entries before `0.1.1` are migrated from `easy-use-less-vue` (previously named `easier-less-vue`).
 
+## [0.1.2] - 2026-02-26
+
+### Changed
+- 预览渲染：mixin body 缩进按最小公共缩进归一化后统一 +2 空格，嵌套层级展示更稳定。
+- 颜色注释计算：mixin 仅使用顶层声明参与颜色提取，不再回退到预览行扫描。
+
+### Fixed
+- 修复 mixin 中顶层重复 key 颜色值展示错误的问题，改为“同名 key 取最后一次声明值”。
+- 修复 mixin 顶层无颜色声明时误显示嵌套层颜色的问题。
+- 修复 mixin body 第一行与后续行缩进不一致导致的错位问题。
+- 修复含嵌套块的 mixin body 截断提取不完整问题，改为按括号深度提取完整定义体。
+
 ## [0.1.1] - 2026-02-21
 
 ### Added

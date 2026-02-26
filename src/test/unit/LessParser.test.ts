@@ -123,13 +123,15 @@ describe('LessParser', () => {
           .inner {
             color: red;
           }
+          background-color: #f00;
         }
       `;
       const mixins = LessParser.extractMixins(code);
-      // Even if body extraction isn't AST perfect, signature should match
       assert.strictEqual(mixins.length, 1);
       assert.strictEqual(mixins[0].name, '.complex');
       assert.strictEqual(mixins[0].params, '');
+      assert.ok(mixins[0].body.includes('background-color: #f00;'));
+      assert.ok(mixins[0].body.trim().endsWith('}'));
     });
 
     it('should match regular classes without parentheses as mixins', () => {

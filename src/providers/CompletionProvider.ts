@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import { CacheManager } from '../services/CacheManager';
-import { extractMixinSignature, formatMixinPreview, formatVariablePreview } from '../utils/LessSymbolPreview';
+import {
+  formatPreviewWithInlineColorSwatches,
+  formatMixinPreview,
+  formatVariablePreview
+} from '../utils/LessSymbolPreview';
 import { isInLessCommentAtPosition, isLessContextAtPosition } from '../utils/LessDocumentContext';
 
 export class LessCompletionProvider implements vscode.CompletionItemProvider {
@@ -76,10 +80,10 @@ export class LessCompletionProvider implements vscode.CompletionItemProvider {
         item.insertText = insertTextStr;
         item.range = replaceRange;
         
-        item.detail = v.value;
-        const varDoc = new vscode.MarkdownString();
-        varDoc.appendCodeblock(formatVariablePreview(v.name, v.value), 'less');
-        item.documentation = varDoc;
+        item.documentation = this.createPreviewMarkdown(
+          formatVariablePreview(v.name, v.value),
+          v.value
+        );
         if (this.isColor(v.value)) {
           item.kind = vscode.CompletionItemKind.Color;
         }
@@ -127,12 +131,12 @@ export class LessCompletionProvider implements vscode.CompletionItemProvider {
         }
         const label = m.name; // e.g. '.border-radius'
         const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Method);
-        item.detail = extractMixinSignature(m.body);
         item.filterText = label;
         item.range = replaceRange;
-        const mixinDoc = new vscode.MarkdownString();
-        mixinDoc.appendCodeblock(formatMixinPreview(m.body), 'less');
-        item.documentation = mixinDoc;
+        item.documentation = this.createPreviewMarkdown(
+          formatMixinPreview(m.body),
+          m.body
+        );
         
         const hasParams = m.params && m.params.trim().length > 0;
         let insertTextStr = '';
@@ -162,6 +166,15 @@ export class LessCompletionProvider implements vscode.CompletionItemProvider {
 
   private isColor(value: string): boolean {
     return /^#([0-9a-fA-F]{3}){1,2}$/.test(value) || /^(rgb|hsl)a?\(/.test(value);
+  }
+
+  private createPreviewMarkdown(previewCode: string, colorSource: string = previewCode): vscode.MarkdownString {
+    const rendered = formatPreviewWithInlineColorSwatches(previewCode, colorSource);
+    const md = new vscode.MarkdownString(rendered.markdown);
+    if (rendered.supportHtml) {
+      md.supportHtml = true;
+    }
+    return md;
   }
 
   private shouldAppendSemicolon(rightText: string): boolean {
